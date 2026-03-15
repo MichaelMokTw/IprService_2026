@@ -1,0 +1,25 @@
+﻿A. 用途: 當錄音時，加密錄音檔一樣會產生，但可以選擇不刪除原檔案，用來暫時聽錄音檔
+
+B. 作法: 
+    1. 製作 pass.txt 檔案內容如下:
+        until=2027-12-31 23:59:59
+        token=af3ed35cb18c6d9981b00b3fc8d168fbfc462fb489a8688480589f874dfdec39
+    2. 將 pass.txt 複製到 SipRecorder.exe 的根目錄即可
+       => 系統會在每次錄完音檔加密後，檢查是否有正確的 pass.txt(時間必須有效)，若有、則不會刪除原始音檔。
+
+C. 說明:
+    1. until: 截止時間，格式:
+        "yyyy-MM-dd",
+        "yyyy-MM-dd HH:mm:ss",
+        "yyyy/MM/dd",
+        "yyyy/MM/dd HH:mm:ss"
+        若沒有時間，則視為 23:59:59
+    2. token 的產生:    
+        2.1. 打開網址：https://www.freeformatter.com/hmac-generator.html
+        2.2. 在 Input string 輸入欄位：輸入你的 until 值 => 2025-07-26 23:59:59
+        2.3. 在 Key 欄位：輸入你的密鑰: miChaeljeRry@BUU5718 (就是開 Lexus 去上班，但第 3 個字母大寫)
+        2.4. 選擇 Hash 演算法：✅ SHA-256
+        2.5. 點擊【Generate HMAC】
+        2.6. 會在下方出現一串 64 字元的 hex 編碼，即為你的 token   
+    ----------- FINISH --------------------
+    <PS> 考慮要同時鎖住 fileID... 下一版再說。

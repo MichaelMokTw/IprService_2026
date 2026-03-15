@@ -1,0 +1,11 @@
+2026-03-14 11:38:10.3470 Info IPR Channel info list ...
+2026-03-14 11:38:10.3470 Info 	 > chID[ 0], chType=IPA, staID=1001, rcvPort=[   -1][   -1], mapExt= 8001, mapUrsChID=   1
+2026-03-14 11:38:10.3470 Info 	 > chID[ 1], chType=IPA, staID=1002, rcvPort=[   -1][   -1], mapExt= 8002, mapUrsChID=   2
+2026-03-14 11:38:10.3470 Info 	 > chID[ 2], chType=IPA, staID=1003, rcvPort=[   -1][   -1], mapExt= 8003, mapUrsChID=   3
+2026-03-14 11:38:10.3470 Info 	 > chID[ 3], chType=IPA, staID=1004, rcvPort=[   -1][   -1], mapExt= 2105, mapUrsChID=   4
+2026-03-14 11:38:10.3470 Info 	 > chID[ 4], chType=IPA, staID=1005, rcvPort=[   -1][   -1], mapExt= 6940, mapUrsChID=   5
+2026-03-14 11:38:10.3470 Info 	 > chID[ 5], chType=IPR, staID=  -1, rcvPort=[ 6000][ 6002], mapExt=     , mapUrsChID=  -1
+2026-03-14 11:38:10.3470 Info 	 > chID[ 6], chType=IPR, staID=  -1, rcvPort=[ 6004][ 6006], mapExt=     , mapUrsChID=  -1
+2026-03-14 11:38:10.3470 Info 	 > chID[ 7], chType=IPR, staID=  -1, rcvPort=[ 6008][ 6010], mapExt=     , mapUrsChID=  -1
+2026-03-14 11:38:10.3470 Info 	 > chID[ 8], chType=IPR, staID=  -1, rcvPort=[ 6012][ 6014], mapExt=     , mapUrsChID=  -1
+2026-03-14 11:38:10.3470 Info 	 > chID[ 9], chType=IPR, staID=  -1, rcvPort=[ 6016][ 6018], mapExt=     , mapUrsChID=  -1

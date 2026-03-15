@@ -1,0 +1,13 @@
+{
+    "profiles": {
+        "IprService_H323": {
+            "commandName": "Project",
+            "launchBrowser": false,
+            "environmentVariables": {
+                "ASPNETCORE_ENVIRONMENT": "Development"
+            },
+            "applicationUrl": "https://localhost:56460;http://localhost:56461"
+        }
+
+    }
+}

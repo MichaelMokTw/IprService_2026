@@ -1,0 +1,28 @@
+﻿    1. 隨便產生一個 sipRec_License.txt。檔案內容不拘(可以隨便放一個 GUID 字串，用來迷惑有心人)
+    2. 把檔案 sipRec_License.txt 放入一個外面的目錄，避免換版被覆蓋或更動到。
+       (因為是用最初檔案拷貝時的 fileID 來作保護，所以檔案不能被更動，包含刪除再Copy、Rename ...等)
+    3. 在 appsettings.json 設定:
+        "LicenseFile": "C:\\license\\sipRec_License.txt",
+        "AuthFile": "",
+    4. 執行 SipRecorder.exe，觀察 System.log，
+            2025-07-15 16:33:13.7596 Info MainWorker ExecuteAsync ...
+            2025-07-15 16:33:13.7596 Info 偵測到平台 OS: Microsoft Windows 10.0.26100
+            2025-07-15 16:33:13.7596 Info Get FileID=00005A1300000000
+            2025-07-15 16:33:13.7596 Error 授權錯誤: auth file not assigned @Microsoft Windows 10.0.26100
+            2025-07-15 16:33:13.7596 Info 服務停止
+        因為沒有指定授權檔案，程式會停止。
+        但是: 程式會利用 sipRec_License.txt 的 FileID 產生一個 key file: sipRecorder.key
+    5. 利用 sipRecorder.key 到 http://richpod.net/licmgr 建立產生授權檔案(參考 http://richpod.net/licmgr 說明)
+    6. 把授權檔(例如: sipRecorder-30136.dat)複製到 c:\license 目錄下。
+    7. 設定 appsettings.json:
+            "LicenseFile": "C:\\license\\sipRec_License.txt",
+            "AuthFile": "C:\\license\\sipRecorder-30136.dat",
+
+
+    http://richpod.net/licmgr 說明:
+    1. 產生一個授權
+    2. 建立時，要用 "三匯IP錄音" 的數量來控制授權
+    3. 使用 "下載" 功能，指定 sipRecorder.key ，自動產生、並下載授權檔，
+       ex: sipRecorder-30136.dat
+
+    ----------- FINISH --------------------
