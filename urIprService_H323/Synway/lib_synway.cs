@@ -11,7 +11,7 @@ namespace richpod.synway;
 /// Synway CTI API 封裝庫 (.NET 8+ 修正版)
 /// </summary>
 public static class lib_synway {
-    private static readonly Logger Logger = LogManager.GetLogger("SynCTIError");
+    private static readonly Logger Logger = LogManager.GetLogger("SynAPI");
 
     // Log 開關
     public static bool IsLoggingEnabled { get; set; } = true;
