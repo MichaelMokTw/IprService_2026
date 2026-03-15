@@ -96,7 +96,7 @@ public class IprWorker {
                     ProcessData(ssmModel);
                 }
                 catch (Exception ex) {
-                    _chLog!.Trace($"ProcessEvent_Cisco() exception: {ex.Message}");
+                    _chLog!.Info($"ProcessEvent_Cisco() exception: {ex.Message}");
                 }
             }
         }
@@ -256,7 +256,7 @@ public class IprWorker {
                 }
                 #endregion
                 else {
-                    _chLog!.Trace($"\t -> START RECORDING WARNING: Global.IPRChInfo[{_hwChID}].RecordingState is already recording(Actived)");
+                    _chLog!.Info($"\t -> START RECORDING WARNING: Global.IPRChInfo[{_hwChID}].RecordingState is already recording(Actived)");
                 }
                 #endregion
                 break;
@@ -266,11 +266,11 @@ public class IprWorker {
             case (ushort)EventCode.E_RCV_IPR_AUX_MEDIA_SESSION_STOPED:
                 #region  *** 收到 Session 停止的訊息 => 停止或暫停錄音                    
                 sessionStr = ssmEvt.GetSessionInfoStr();
-                _chLog!.Trace($"\t -> try STOP/PAUSE RECORDING: staID={stationID}, ext={_extNo}, iprAnaChID={_iprAnaID}, iprRecChID={_iprRecID}, sessionInfo={sessionStr}");
+                _chLog!.Info($"\t -> try STOP/PAUSE RECORDING: staID={stationID}, ext={_extNo}, iprAnaChID={_iprAnaID}, iprRecChID={_iprRecID}, sessionInfo={sessionStr}");
 
                 // 停止錄音: 如果是 callState 是 idle，且錄音在(Active/Pause) => 則停止錄音
                 if (iprCh.CallState == (int)ENUM_CallState.Idle && iprCh.RecordingState != (int)ENUM_RecordingState.Idle) {
-                    _chLog!.Trace($"\t -> STOP RECORDING: staID={stationID}, ext={_extNo}");
+                    _chLog!.Info($"\t -> STOP RECORDING: staID={stationID}, ext={_extNo}");
                     StopRecording(ssmEvt);
                 }
                 else {
@@ -278,12 +278,12 @@ public class IprWorker {
                     callRefObj = callRefMgr.GetCallRef((uint)ssmEvt.SessionInfo.nCallRef);
                     if (callRefObj != null) {
                         if (callRefObj.Status != ENUM_CallRefStatus.CallHeld) {
-                            _chLog!.Trace($"\t -> callRef({callRefObj.CallRef}) is not held, removed!");
+                            _chLog!.Info($"\t -> callRef({callRefObj.CallRef}) is not held, removed!");
                             callRefMgr.RemoveCallRef(callRefObj.CallRef);
                         }
                         else {
                             callRefObj.RecStatus = ENUM_RecordingStatus.Pause;
-                            _chLog!.Trace($"\t -> callRef({callRefObj.CallRef}) is held, keep it.");
+                            _chLog!.Info($"\t -> callRef({callRefObj.CallRef}) is held, keep it.");
                         }
                     }
                     #endregion
@@ -292,18 +292,18 @@ public class IprWorker {
                     // 2022/09/28 配合升級到三匯驅動 5442，取消錄音站暫停
                     // 暫停錄音
                     //if (iprCh.RecordingState == (int)ENUM_RecordingState.Actived) {
-                    //    _chLog!.Trace($"\t -> PAUSE RECORDING: staID={stationID}, ext={_ExtNo}");
+                    //    _chLog!.Info($"\t -> PAUSE RECORDING: staID={stationID}, ext={_ExtNo}");
                     //    if (lib_synway.PauseRecToFile(_IprRecChID) >= 0) {
-                    //        _chLog!.Trace($"\t -> PAUSE RECORDING OK");
+                    //        _chLog!.Info($"\t -> PAUSE RECORDING OK");
                     //    }
                     //    else {
-                    //        _chLog!.Trace($"\t -> PAUSE RECORDING ERROR(PauseRecToFile failed): staID={stationID}, ext={_ExtNo}");
+                    //        _chLog!.Info($"\t -> PAUSE RECORDING ERROR(PauseRecToFile failed): staID={stationID}, ext={_ExtNo}");
                     //    }
                     //    iprCh.RecordingState = (int)ENUM_RecordingState.Pause;
                     //    iprCh.RecPauseTime = DateTime.Now;
                     //}
                     //else {
-                    //    _chLog!.Trace($"\t -> STOP/PAUSE RECORDING ERROR: staID={stationID}, ext={_ExtNo}, CallState/RecordingState mismatch.");
+                    //    _chLog!.Info($"\t -> STOP/PAUSE RECORDING ERROR: staID={stationID}, ext={_ExtNo}, CallState/RecordingState mismatch.");
                     //}
                     #endregion
                 }
@@ -314,7 +314,7 @@ public class IprWorker {
                 ret = ssmEvt.dwParam & 0xffff;
                 slaverID = ssmEvt.dwParam >> 16;
                 errMsg = ssmEvt.DecodeSlaverErrorMsg(ret);
-                _chLog!.Trace($"\t -> E_IPR_ACTIVE_AND_REC_CB: {errMsg}(ret={ret}), slaverID={slaverID}");
+                _chLog!.Info($"\t -> E_IPR_ACTIVE_AND_REC_CB: {errMsg}(ret={ret}), slaverID={slaverID}");
                 GVar.CTI!.ScanIprSlaver(out err);
                 break;
             case (ushort)EventCode.E_IPR_DEACTIVE_AND_STOPREC_CB:
@@ -323,20 +323,20 @@ public class IprWorker {
                 ret = ssmEvt.dwParam & 0xffff;
                 slaverID = ssmEvt.dwParam >> 16;
                 var slaverMsg = ssmEvt.DecodeSlaverErrorMsg(ret);
-                _chLog!.Trace($"\t -> E_IPR_DEACTIVE_AND_STOPREC_CB: {slaverMsg}(ret={ret}), slaverID={slaverID}");
+                _chLog!.Info($"\t -> E_IPR_DEACTIVE_AND_STOPREC_CB: {slaverMsg}(ret={ret}), slaverID={slaverID}");
                 GVar.CTI!.ScanIprSlaver(out err);
                 break;
             case (ushort)EventCode.E_IPR_LINK_REC_SLAVER_CONNECTED:
-                _chLog!.Trace($"\t -> WARNING => E_IPR_LINK_REC_SLAVER_CONNECTED");
+                _chLog!.Info($"\t -> WARNING => E_IPR_LINK_REC_SLAVER_CONNECTED");
                 GVar.CTI!.ScanIprSlaver(out err);
                 break;
             case (ushort)EventCode.E_IPR_LINK_REC_SLAVER_DISCONNECTED:
-                _chLog!.Trace($"\t -> *** WARNING *** => E_IPR_LINK_REC_SLAVER_DISCONNECTED");
+                _chLog!.Info($"\t -> *** WARNING *** => E_IPR_LINK_REC_SLAVER_DISCONNECTED");
                 GVar.CTI!.ScanIprSlaver(out err);
                 break;
             case (ushort)EventCode.E_RCV_IPR_MEDIA_SESSION_FOWARDING:
             case (ushort)EventCode.E_RCV_IPR_MEDIA_SESSION_FOWARD_STOPED:
-                _chLog!.Trace($"\t -> sessionID={ssmEvt.dwParam}");
+                _chLog!.Info($"\t -> sessionID={ssmEvt.dwParam}");
                 break;
                 #endregion
             #endregion
@@ -352,7 +352,7 @@ public class IprWorker {
         var stationID = ssmEvt.stationID;
         var dEventName = ssmEvt.GetDEventCodeName();
         var callInfo = ssmEvt.CallInfo;
-        _chLog!.Trace($">>> DChEvent=[{dEventName}], nRef={ssmEvt.nReference}, staID={stationID}, dwSubRsn={ssmEvt.dwSubReason}, " +
+        _chLog!.Info($">>> DChEvent=[{dEventName}], nRef={ssmEvt.nReference}, staID={stationID}, dwSubRsn={ssmEvt.dwSubReason}, " +
                             $"CallInfo(callRef={callInfo.CallRef}, callSrc={callInfo.CallSource}, caller={callInfo.szCallerId}, called={callInfo.szCalledId})");
         
         CallRefDataModel? callRefObj = null;
@@ -370,7 +370,7 @@ public class IprWorker {
                 #endregion
 
                 iprCh.RemotePartyID = ssmEvt.pvBuffer; //lib_ctiDecode.GetSsmEventpvBuffer(ssmEvent); 
-                _chLog!.Trace($"\t -> ext={_extNo}, set IPRChInfo[{_hwChID}].RemotePartyID={iprCh.RemotePartyID}");                
+                _chLog!.Info($"\t -> ext={_extNo}, set IPRChInfo[{_hwChID}].RemotePartyID={iprCh.RemotePartyID}");                
 
                 // 2021/07/26 added:
                 // DE_REMOTE_PARTYID 發生時, DE_CALL_CONNECTED 還沒發生，而且此時的 CallRef 不能用
@@ -384,7 +384,7 @@ public class IprWorker {
             case (ushort)DEventCode.DE_DGT_PRS:
                 //發現 Cisco 抓這個會不完整...所以這裡只顯示log，不放進 DTMF                    
                 string c = (ssmEvt.dwSubReason & 0x000000ff).ToString();
-                _chLog!.Trace($"\t -> get dtmf={c}");
+                _chLog!.Info($"\t -> get dtmf={c}");
                 break;
 
             // SIP 沒有 DE_MSG_CHG ，不需要從 LCD 抓資訊                
@@ -402,7 +402,7 @@ public class IprWorker {
                 iprCh.CallState = (int)ENUM_CallState.Active;
 
                 callRefObj = CreateCallRefObj(callInfo);
-                _chLog!.Trace($"\t -> create a new callRefObj({callRefObj.CallRef}), callDir={callRefObj.CallDir}");
+                _chLog!.Info($"\t -> create a new callRefObj({callRefObj.CallRef}), callDir={callRefObj.CallDir}");
                 break;
 
             // 響鈴
@@ -452,7 +452,7 @@ public class IprWorker {
             case (ushort)DEventCode.DE_RING_OFF:
                 // 這一段有點奇怪，還要斟酌...
                 if (iprCh.CallState == (int)ENUM_CallState.Ring) {
-                    _chLog!.Trace($"\t -> staID={stationID}, ext={_extNo} last callState is CALL_STATE_RING, set callState=CALL_STATE_IDLE");
+                    _chLog!.Info($"\t -> staID={stationID}, ext={_extNo} last callState is CALL_STATE_RING, set callState=CALL_STATE_IDLE");
                     iprCh.CallState = (int)ENUM_CallState.Idle;
                     StopRecording(ssmEvt);
                 }
@@ -533,15 +533,17 @@ public class IprWorker {
         var nRef = ssmEvt.nReference;
         var recStartTime = DateTime.Now;
         var mktSessionInfo = ssmEvt.SessionInfo;
-        var recFullFileName = GVar.URS!.GetRecFullFileName(recStartTime, _ursChID, out errMsg); // full path WAV filename
+        ulong recID = Snowflake.NextId();
+
+        var recFullFileName = GVar.URS!.GetRecFullFileName(recID, recStartTime, _ursChID, out errMsg); // full path WAV filename
         if (!string.IsNullOrEmpty(errMsg)) {
-            _chLog!.Trace($"\t -> START RECORDING ERROR: GetRecFullFileName failed({errMsg}");
+            _chLog!.Info($"\t -> START RECORDING ERROR: GetRecFullFileName failed({errMsg}");
             return false;
         }
 
         var iprCh = GVar.CTI!.IPRChInfo[_hwChID];
 
-        ulong recID = Snowflake.NextId();
+        
         iprCh.RecID = recID;
         iprCh.RecFullFileName = recFullFileName;
         iprCh.RecStartTime = recStartTime;
@@ -557,16 +559,16 @@ public class IprWorker {
             callRefObj.RecStatus = ENUM_RecordingStatus.Start;
 
         // CTI 的部分            
-        _chLog!.Trace($"\t -> START RECORDING: recID={recID}, callRef={mktSessionInfo.nCallRef}, sessionId={mktSessionInfo.dwSessionId}, recFileName={recFullFileName}, guid={recGuid}");
+        _chLog!.Info($"\t -> START RECORDING: recID={recID}, callRef={mktSessionInfo.nCallRef}, sessionId={mktSessionInfo.dwSessionId}, recFileName={recFullFileName}, guid={recGuid}");
 
         // 將 RecGuid 寫入 tblChannelStatus
         var recType = ENUM_RecordingType.Schedule;
         var lineStatus = ChCtrl.CallDir == ENUM_CallDir.Inbound ? ENUM_LineStatus.Inbound : ENUM_LineStatus.Outbound;
         var errHD = await _recDb.UpdateChannelStatus(_loggerSeq, _ursChID, lineStatus, recType, ChCtrl.CallerID, ChCtrl.DTMF, recGuid, recStartTime);
         if (errHD.Success)
-            _chLog!.Trace($"\t -> START RECORDING: update channel status ok.(guid={recGuid})");
+            _chLog!.Info($"\t -> START RECORDING: update channel status ok.(guid={recGuid})");
         else
-            _chLog!.Trace($"\t -> START RECORDING: update channel status error.(err={errHD.UserMessage})");
+            _chLog!.Info($"\t -> START RECORDING: update channel status error.(err={errHD.UserMessage})");
 
         // 這裡本來要從 SharedMemory 抄 CTIEventLink => iprCh.RecControl.CTIEventLink = ???
         // 2020/09/25：CTIEventLink 先不做...  改變作法 => 還未決定...
@@ -576,14 +578,14 @@ public class IprWorker {
         retCode = lib_synway.RecToFileA(_iprRecID, recFullFileName, (int)ENUM_ShCodec.CODEC_711, RTPCallBack);
 
         if (retCode == 0) { // 錄音成功                            
-            _chLog!.Trace($"\t -> RecToFileA OK: recID={recID}, fwdPriPort={mktSessionInfo.nFowardingPPort}, fwdSndPort={mktSessionInfo.nFowardingSPort}");
+            _chLog!.Info($"\t -> RecToFileA OK: recID={recID}, fwdPriPort={mktSessionInfo.nFowardingPPort}, fwdSndPort={mktSessionInfo.nFowardingSPort}");
             // 注意: IPRSendSession 的 nRef 是 IPR_ANA 的迴路ID
             ret = StartToSendSession(nRef, "127.0.0.1", GVar.CTI!.IPRChInfo[_iprRecID].PriRcvPort,
                                            "127.0.0.1", GVar.CTI!.IPRChInfo[_iprRecID].SecRcvPort);
         }
         else { // 錄音失敗
             ret = false;
-            _chLog!.Trace($"\t -> RecToFileA ERROR: recID={recID}");
+            _chLog!.Info($"\t -> RecToFileA ERROR: recID={recID}");
         }
         return ret;
     }    
@@ -602,11 +604,11 @@ public class IprWorker {
 
         var iprCh = GVar.CTI!.IPRChInfo[_hwChID];
 
-        _chLog!.Trace($"\t -> RE-START RECORDING: staID={stationID}, ext={_extNo}, iprRecChID={_iprRecID}");
+        _chLog!.Info($"\t -> RE-START RECORDING: staID={stationID}, ext={_extNo}, iprRecChID={_iprRecID}");
 
         // *** 因為 Restart 錄音的時候，要重新指定 CallRef ***
         var newCallRef = ssmEvt.SessionInfo.nCallRef;
-        _chLog!.Trace($"\t -> RE-START RECORDING: *** oldCallRef={iprCh.CallRef}, newCallRef={newCallRef} ***");
+        _chLog!.Info($"\t -> RE-START RECORDING: *** oldCallRef={iprCh.CallRef}, newCallRef={newCallRef} ***");
         iprCh.CallRef = newCallRef;
 
         //2021/07/28 added
@@ -616,13 +618,13 @@ public class IprWorker {
 
         // Restart Recording ...
         if (lib_synway.RestartRecToFile(_iprRecID) >= 0) {
-            _chLog!.Trace($"\t -> RestartRecToFile OK");
+            _chLog!.Info($"\t -> RestartRecToFile OK");
             var iprRecCh = GVar.CTI!.IPRChInfo[_iprRecID];
             ret = StartToSendSession(nRef, "127.0.0.1", iprRecCh.PriRcvPort, "127.0.0.1", iprRecCh.SecRcvPort);
         }
         else {
             ret = false;
-            _chLog!.Trace($"\t -> RestartRecToFile Error");
+            _chLog!.Info($"\t -> RestartRecToFile Error");
         }
         return ret;
     }
@@ -632,10 +634,10 @@ public class IprWorker {
         var pri = $"{priSlaverAddr}:{priSlaverPort}";
         var sec = $"{secSlaverAddr}:{secSlaverPort}";
         if (lib_synway.IPRSendSession(iprAnaChID, priSlaverAddr, priSlaverPort, secSlaverAddr, secSlaverPort) >= 0) {
-            _chLog!.Trace($"\t -> SEND SESSION OK: iprChID={iprAnaChID}, priAddrPort={pri}, sndAddrPort={sec}");
+            _chLog!.Info($"\t -> SEND SESSION OK: iprChID={iprAnaChID}, priAddrPort={pri}, sndAddrPort={sec}");
         }
         else {            
-            _chLog!.Trace($"\t -> SEND SESSION ERROR: iprChID={iprAnaChID}, priAddrPort={pri}, sndAddrPort={sec}");
+            _chLog!.Info($"\t -> SEND SESSION ERROR: iprChID={iprAnaChID}, priAddrPort={pri}, sndAddrPort={sec}");
             ret = false;
         }
         return ret;
@@ -645,16 +647,16 @@ public class IprWorker {
         var mktCallInfo = ssmEvt.CallInfo;
         var iprCh = GVar.CTI!.IPRChInfo[_hwChID];
         var stationID = iprCh.StationID;
-        _chLog!.Trace($"\t -> try StopRecording ...staID={stationID}, ext={_extNo}, hwChID={_hwChID}, callRef={mktCallInfo.CallRef}, iprRecChID={_iprRecID}");
+        _chLog!.Info($"\t -> try StopRecording ...staID={stationID}, ext={_extNo}, hwChID={_hwChID}, callRef={mktCallInfo.CallRef}, iprRecChID={_iprRecID}");
 
         // 1. 檢查目前這一個 event 的 callRef 是否事先存在，不存在則不能停止錄音，必須繼續錄音
         var callRefObj = callRefMgr.GetCallRef(mktCallInfo.CallRef);
         if (callRefObj == null) {
-            _chLog!.Trace($"\t\t > CallRef({mktCallInfo.CallRef}) not found, ****** StopRecording() ignored! ******");
+            _chLog!.Info($"\t\t > CallRef({mktCallInfo.CallRef}) not found, ****** StopRecording() ignored! ******");
             return;
         }
-        _chLog!.Trace($"\t\t > Current CallRef({mktCallInfo.CallRef}): CallDir={callRefObj.CallDir}, SessionStartTime={GetTimeStr(callRefObj.SessionStartTime)}, RecStatus={callRefObj.RecStatus}, CallerID={callRefObj.CallerID}, DTMF={callRefObj.DTMF}, status={callRefObj.Status}");
-        _chLog!.Trace($"\t\t > ChCtrl: CallDir={ChCtrl.CallDir}, CallerID={ChCtrl.CallerID}, DTMF={ChCtrl.DTMF}");
+        _chLog!.Info($"\t\t > Current CallRef({mktCallInfo.CallRef}): CallDir={callRefObj.CallDir}, SessionStartTime={callRefObj.SessionStartTime.ToTimeStr()}, RecStatus={callRefObj.RecStatus}, CallerID={callRefObj.CallerID}, DTMF={callRefObj.DTMF}, status={callRefObj.Status}");
+        _chLog!.Info($"\t\t > ChCtrl: CallDir={ChCtrl.CallDir}, CallerID={ChCtrl.CallerID}, DTMF={ChCtrl.DTMF}");
 
         // 無論如何，要先把這個 callRef 移除
         callRefMgr.RemoveCallRef(mktCallInfo.CallRef);
@@ -666,7 +668,7 @@ public class IprWorker {
 
         // 2. 檢查是否還有其他的 callRef 存在(例如之前的held)，如果有，仍然不能停止錄音，必須繼續錄音
         if (callRefMgr.CallRefCount >= 1) { // 不包含自己，                
-            _chLog!.Trace($"\t\t > Warning: total {callRefMgr.CallRefCount} CallRef is recording, *** should not stop recording ***");
+            _chLog!.Info($"\t\t > Warning: total {callRefMgr.CallRefCount} CallRef is recording, *** should not stop recording ***");
             return;
         }
 
@@ -679,10 +681,10 @@ public class IprWorker {
         var iprCh = GVar.CTI!.IPRChInfo[_hwChID];
 
         if (iprCh.RecordingState == (int)ENUM_RecordingState.Idle) {
-            _chLog!.Trace($"\t\t > StopRecording ERROR: Global.IPRChInfo[{_hwChID}].RecordingState is RECORDING_IDLE");
+            _chLog!.Info($"\t\t > StopRecording ERROR: Global.IPRChInfo[{_hwChID}].RecordingState is RECORDING_IDLE");
             return;
         }
-        _chLog!.Trace($"\t\t > DoStopRecording starting ...");
+        _chLog!.Info($"\t\t > DoStopRecording starting ...");
         #region 處理 Inbound(CallerID) &  Outbound(DTMF)                                    
         // 2021/08/08 這裡的 Inbound/Outbound 不能抓 callRefObj, 應該要抓 chCtrl
         // 因為要抓第一次的 callRefObj 那時候的資訊，而第一次的資訊會記錄在 chCtrl 之中
@@ -696,17 +698,17 @@ public class IprWorker {
         }
 
         if (ChCtrl.CallDir == ENUM_CallDir.Inbound)
-            _chLog!.Trace($"\t\t\t > StopRecording: inbound call, Get callerID={iprCh.CallerID}");
+            _chLog!.Info($"\t\t\t > StopRecording: inbound call, Get callerID={iprCh.CallerID}");
         else
-            _chLog!.Trace($"\t\t\t > StopRecording: outbound call, Get DTMF={iprCh.DTMF}");
+            _chLog!.Info($"\t\t\t > StopRecording: outbound call, Get DTMF={iprCh.DTMF}");
         //--------------------------------------------------------------------------------------
         #endregion
 
         // IPR_StopRecToFile                            
         if (lib_synway.StopRecToFile(_iprRecID, out string errMsg) == 0)
-            _chLog!.Trace($"\t\t\t -> StopRecording: StopRecToFile(iprRecChID={_iprRecID}) ok.");
+            _chLog!.Info($"\t\t\t -> StopRecording: StopRecToFile(iprRecChID={_iprRecID}) ok.");
         else {
-            _chLog!.Trace($"\t\t\t -> StopRecording: StopRecToFile(iprRecChID={_iprRecID}) error: {errMsg}");
+            _chLog!.Info($"\t\t\t -> StopRecording: StopRecToFile(iprRecChID={_iprRecID}) error: {errMsg}");
         }
 
         // Update ChannelStatus
@@ -714,16 +716,16 @@ public class IprWorker {
         var recType = ENUM_RecordingType.Idle;
         var errHD = _recDb.UpdateChannelStatus(_loggerSeq, _ursChID, lineStatus, recType, "", "").GetAwaiter().GetResult();
         if (errHD.Success)
-            _chLog!.Trace($"\t\t\t -> StopRecording: update channel status ok");
+            _chLog!.Info($"\t\t\t -> StopRecording: update channel status ok");
         else
-            _chLog!.Trace($"\t\t\t -> StopRecording: update channel status error.(err={errHD.UserMessage})");
+            _chLog!.Info($"\t\t\t -> StopRecording: update channel status error.(err={errHD.UserMessage})");
 
         // 完成結束錄音            
         try {
             CompleteRecording(_hwChID);
         }
         catch (Exception ex) {
-            _chLog!.Trace($"\t\t\t -> CompleteRecording() raise an exception: {ex.Message}");
+            _chLog!.Info($"\t\t\t -> CompleteRecording() raise an exception: {ex.Message}");
         }
 
         // 要先 Reset 的欄位
@@ -744,28 +746,28 @@ public class IprWorker {
         // 不過 caller 是傳 _hwChID 進來的，所以結果一樣，為了一致性，更正為 iprAnaID
         var recID = GVar.CTI!.IPRChInfo[iprAnaID].RecID;
 
-        _chLog!.Trace($"\t -> CompleteRecording... recID={recID}, iprAnaChID={iprAnaID}, recStartTime={GVar.CTI!.IPRChInfo[iprAnaID].RecStartTime.ToString("yyyy/MM/dd HH:mm:ss")}");
-        _chLog!.Trace($"\t\t > Prepare RecordingDataMode... recID={recID}");
+        _chLog!.Info($"\t -> CompleteRecording... recID={recID}, iprAnaChID={iprAnaID}, recStartTime={GVar.CTI!.IPRChInfo[iprAnaID].RecStartTime.ToString("yyyy/MM/dd HH:mm:ss")}");
+        _chLog!.Info($"\t\t > Prepare RecordingDataMode... recID={recID}");
         var model = MakeRecordingDataModel(iprAnaID);
         //SignalR_Notify_StopRecording(model);
-        _chLog!.Trace($"\t\t > Enqueue RecordingDataMode... recID={model.RecID}");
-        //Global.RecDataQueue.Enqueue(model);
+
+        _chLog!.Info($"\t\t > Enqueue RecordingDataMode... recID={model.RecID}");
+        GVar.AddUrsTaskQueue(model);        
         return true;
     }
 
     // 複製 Global.IPRChInfo[iprAnaChID] 裡面的欄位值 => RecordingDataModel
     private RecordingDataModel MakeRecordingDataModel(int iprAnaChID) {
-        _chLog!.Trace($"\t > MakeRecordingDataModel...(ursChID={_ursChID}), ext={_extNo}");
+        _chLog!.Info($"\t > MakeRecordingDataModel...(ursChID={_ursChID}), ext={_extNo}");
 
         // 注意，是 iprAnaChID 的 IPR
         var iprAnaCh = GVar.CTI!.IPRChInfo[iprAnaChID];
 
         var recStartTime = iprAnaCh.RecStartTime;
         var recStopTime = DateTime.Now;
-
         var recLen = recStopTime > recStartTime ? (int)(recStopTime - iprAnaCh.RecStartTime).TotalSeconds : 0;        
 
-        _chLog!.Trace($"\t\t > RecLen={recLen}, RecStartTime={GetDateTimeStr(recStartTime)}, RecStopTime={GetDateTimeStr(recStopTime)}");
+        _chLog!.Info($"\t\t > RecLen={recLen}, RecStartTime={recStartTime.ToStdStr()}, RecStopTime={recStopTime.ToStdStr()}");
         var model = new RecordingDataModel();
         model.LoggerSeq = GVar.URS!.LoggerConfig!.LoggerSeq;
         model.LoggerID = GVar.URS!.LoggerConfig!.LoggerID;
@@ -774,7 +776,7 @@ public class IprWorker {
         model.AgentID = GVar.URS!.GetUrsChAgentID(_extNo);
 
         // 注意: 此時錄音檔還沒被 rename, 實際仍是 wav file
-        var wavFileName = iprAnaCh.RecFullFileName;
+        var wavFileName = iprAnaCh.RecFullFileName; // *.wav
         model.RecFileSizeMB = lib_misc.GetFileSizeMB(wavFileName); // 取得檔案大小，在 ConvertService 中，若加密，會再度更新 RecFileSizeMB            
 
         var fileName = Path.ChangeExtension(wavFileName, ".711"); // change *.711
@@ -852,28 +854,6 @@ public class IprWorker {
         return string.Empty;
     }
 
-    private string GetTimeStr(DateTime? dt) {
-        var ret = "";
-        if (!dt.HasValue) {
-            ret = "*";
-        }
-        else {
-            ret = dt.Value.ToString("HH:mm:ss");
-        }
-        return ret;
-    }
-
-    private string GetDateTimeStr(DateTime? dt) {
-        var ret = "";
-        if (!dt.HasValue) {
-            ret = "*";
-        }
-        else {
-            ret = dt.Value.ToString("yyyy/MM/dd HH:mm:ss");
-        }
-        return ret;
-    }
-
     // *** 錄音迴路 Callback 回來的，所以 ch 是後面的 IPR_REC 迴路編號 ***
     public static void RtpCallbackFunc(int ch, IntPtr lpData, uint dwDataLen) {
         //
@@ -936,17 +916,17 @@ public class IprWorker {
 
             // 1. 使用字串內插 (支援 .NET Core 全系列)
             
-            _chLog.Trace($"*** IPRChInfo[{_hwChID}].Data => RecID={iprCh.RecID}, ChState={lib_ctiDecode.DecodeChStateStr(iprCh.ChState)}, CallState={iprCh.CallState}, RecordingState={iprCh.RecordingState}, CallRef={iprCh.CallRef}, StationID={iprCh.StationID}, RecStartTime={GetDateTimeStr(iprCh.RecStartTime)}, RecPauseTime={GetDateTimeStr(iprCh.RecPauseTime)}, RemotePartyID={iprCh.RemotePartyID}, DTMF={iprCh.DTMF}, RingFlag={iprCh.RingFlag}, RecFullFileName={iprCh.RecFullFileName}, RecGuid={iprCh.RecGuid}");
+            _chLog.Trace($"*** IPRChInfo[{_hwChID}].Data => RecID={iprCh.RecID}, ChState={lib_ctiDecode.DecodeChStateStr(iprCh.ChState)}, CallState={iprCh.CallState}, RecordingState={iprCh.RecordingState}, CallRef={iprCh.CallRef}, StationID={iprCh.StationID}, RecStartTime={iprCh.RecStartTime.ToStdStr()}, RecPauseTime={iprCh.RecPauseTime.ToStdStr()}, RemotePartyID={iprCh.RemotePartyID}, DTMF={iprCh.DTMF}, RingFlag={iprCh.RingFlag}, RecFullFileName={iprCh.RecFullFileName}, RecGuid={iprCh.RecGuid}");
 
             // 2. ChCtrl 資訊
-            _chLog.Trace($"*** ChCtrl.Data => lastRemotePartyID={ChCtrl.LastRemotePartyID}, setTime={GetTimeStr(ChCtrl.RemotePartyIDSetTime)}, CallDir={ChCtrl.CallDir}, CallerID={ChCtrl.CallerID}, DTMF={ChCtrl.DTMF}");
+            _chLog.Trace($"*** ChCtrl.Data => lastRemotePartyID={ChCtrl.LastRemotePartyID}, setTime={ChCtrl.RemotePartyIDSetTime.ToTimeStr()}, CallDir={ChCtrl.CallDir}, CallerID={ChCtrl.CallerID}, DTMF={ChCtrl.DTMF}");
 
             // 3. .NET 8 替代 .Index() 的寫法
             // 使用 Select 同時取出 索引 與 物件
             var callRefSnapshot = callRefMgr.CallRefList.Select((cr, idx) => new { Index = idx + 1, Data = cr });
             foreach (var item in callRefSnapshot) {
                 var cr = item.Data;
-                _chLog.Trace($"\t @@@ {item.Index}. CallRef({cr.CallRef}): CallDir={cr.CallDir}, CreatedTime={GetTimeStr(cr.CreatedTime)}, SessionStartTime={GetTimeStr(cr.SessionStartTime)}, RecStatus={cr.RecStatus}, CallerID={cr.CallerID}, DTMF={cr.DTMF}, status={cr.Status}, LastHeldTime={GetTimeStr(cr.LastHeldTime)}");
+                _chLog.Trace($"\t @@@ {item.Index}. CallRef({cr.CallRef}): CallDir={cr.CallDir}, CreatedTime={cr.CreatedTime.ToTimeStr()}, SessionStartTime={cr.SessionStartTime.ToTimeStr()}, RecStatus={cr.RecStatus}, CallerID={cr.CallerID}, DTMF={cr.DTMF}, status={cr.Status}, LastHeldTime={cr.LastHeldTime.ToTimeStr()}");
             }
 
             _chLog.Trace(string.Empty);

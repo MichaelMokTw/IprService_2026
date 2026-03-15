@@ -69,7 +69,8 @@ namespace MyProject {
 
                 // 註冊 Worker                
                 nlog.Info("\t 註冊 worker ...");
-                builder.Services.AddHostedService<MainWorker>();                
+                builder.Services.AddHostedService<MainWorker>();
+                builder.Services.AddHostedService<MakeRecWorker>();
 
                 #region token 驗證機制
                 builder.Services.AddAuthentication(options => {

@@ -55,7 +55,7 @@ namespace MyProject.ProjectCtrl {
         public bool VolumeNormalize { get; set; } = false;                
         public int ClearChannelIntervalSec { get; set; } = 60;        
         public int ForceStopRecMaxHoldMin { get; set; } = 5;        
-        public int CreateRecFileMaxMin { get; set; } = 20;        
+        public int ProcessRecFileMaxMin { get; set; } = 3;        
 
     }
 

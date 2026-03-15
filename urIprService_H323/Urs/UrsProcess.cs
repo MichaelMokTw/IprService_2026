@@ -142,6 +142,7 @@ namespace MyProject.Urs {
                 LoggerConfig.LoggerID = result.Data.LoggerID;
                 LoggerConfig.LoggerName = result.Data.LoggerName;
                 LoggerConfig.UrsFolder = result.Data.UrsFolder;
+                LoggerConfig.BoardNum = result.Data.BoardNum;
                 LoggerConfig.VoiceCodec = result.Data.VoiceCodec;
                 LoggerConfig.MinRecTime = result.Data.MinRecTime;
                 LoggerConfig.MaxRecTime = result.Data.MaxRecTime;
@@ -407,7 +408,7 @@ namespace MyProject.Urs {
             return (true, Path.Combine(path, $"{yyyymmdd}.dat"));
         }
 
-        public string GetRecFullFileName(DateTime recStartTime, int ursChID, out string errMsg) {
+        public string GetRecFullFileName(ulong recID, DateTime recStartTime, int ursChID, out string errMsg) {
             errMsg = "";
             var fullFileName = "";
 
@@ -428,6 +429,7 @@ namespace MyProject.Urs {
                     var subSn = 1; // 目前永遠都是1, 這是用來分辨檔案切割用的，但是切割檔案目前不需要，會改成撥放時再切割分段播放
                     var fileName = $"{yyyymmdd}{RecFileSn:X4}{subSn:D2}_{chNo}.wav"; // IP錄音大部分是 PCMA、PCMU，故統一用 711
                     fullFileName = Path.Combine(path, fileName);
+                    _nlog.Info($"[URS] GetRecFullFileName: recID={recID}, subSn={subSn}, RecFileSn={RecFileSn} => {fullFileName}");
                 }                    
             }            
             

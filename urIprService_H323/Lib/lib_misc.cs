@@ -486,6 +486,5 @@ namespace MyProject.lib {
             return size;
         }
 
-
     }
 }
