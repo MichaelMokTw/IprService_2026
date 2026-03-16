@@ -408,31 +408,100 @@ namespace MyProject.Urs {
             return (true, Path.Combine(path, $"{yyyymmdd}.dat"));
         }
 
+        //public string GetRecFullFileName(ulong recID, DateTime recStartTime, int ursChID, out string errMsg, bool checkUnique = false) {
+        //    errMsg = "";
+        //    var fullFileName = "";
+
+        //    lock (objFileSn) {
+        //        RecFileSn++;
+        //        var yyyymm = recStartTime.ToString("yyyyMM");
+        //        var yyyymmdd = recStartTime.ToString("yyyyMMdd");
+        //        var chNo = ursChID.ToString("D3");
+        //        // path = $urs\data\yyyymm\yyyymmdd\001
+        //        var path = Path.Combine(UrsDataPath!, yyyymm, yyyymmdd, chNo);
+
+        //        // 預先開啟路徑
+        //        var err = lib_misc.ForceCreateFolder(path); // 順便檢查、開啟Path
+        //        if (!string.IsNullOrEmpty(err)) {
+        //            errMsg = $"URS 錄音檔路徑無法開啟({path}): {err}";                    
+        //        }
+        //        else {
+        //            var machineID = (GVar.Config?.Recording?.MachineID ?? 1) * 10;                    
+        //            var retry = 1;
+        //            var subSn = 1;
+        //            while (retry < 10) {                        
+        //                subSn = machineID + retry; 
+        //                var fileName = $"{yyyymmdd}{RecFileSn:X4}{subSn:D2}_{chNo}.wav"; // IP錄音大部分是 PCMA、PCMU，故統一用 711
+
+        //                var file_wav = Path.Combine(path, fileName);
+        //                var file_711 = Path.ChangeExtension(file_wav, ".711");
+        //                // 檢查是否重複，一旦重複就會造成後續錄音檔產製失敗
+        //                if (!File.Exists(file_711) && !File.Exists(file_wav)) {
+        //                    fullFileName = file_wav; // 最後 return wav file
+        //                    _nlog.Info($"[URS] GetRecFullFileName: recID={recID}, RecFileSn={RecFileSn}, subSn={subSn} => {fullFileName}");
+        //                    break;
+        //                }
+        //                else {
+        //                    RecFileSn++;
+        //                    retry++;
+        //                }                                                                                   
+        //            }
+        //            if (string.IsNullOrEmpty(fullFileName)) {
+        //                errMsg = $"無法產生唯一的錄音檔檔名(recID={recID}, path={path}, retry={retry}, RecFileSn={RecFileSn}, subSn={subSn})";
+        //                _nlog.Error($"[URS] GetRecFullFileName Error: {errMsg}");                        
+        //            }
+        //        }                    
+        //    }            
+
+        //    return fullFileName;
+        //}
+
         public string GetRecFullFileName(ulong recID, DateTime recStartTime, int ursChID, out string errMsg) {
             errMsg = "";
             var fullFileName = "";
 
             lock (objFileSn) {
-                RecFileSn++;
                 var yyyymm = recStartTime.ToString("yyyyMM");
                 var yyyymmdd = recStartTime.ToString("yyyyMMdd");
                 var chNo = ursChID.ToString("D3");
-                // path = $urs\data\yyyymm\yyyymmdd\001
                 var path = Path.Combine(UrsDataPath!, yyyymm, yyyymmdd, chNo);
 
-                // 預先開啟路徑
-                var err = lib_misc.ForceCreateFolder(path); // 順便檢查、開啟Path
+                var err = lib_misc.ForceCreateFolder(path);
                 if (!string.IsNullOrEmpty(err)) {
-                    errMsg = $"URS 錄音檔路徑無法開啟({path}): {err}";                    
+                    errMsg = $"URS 錄音檔路徑無法開啟({path}): {err}";
                 }
                 else {
-                    var subSn = 1; // 目前永遠都是1, 這是用來分辨檔案切割用的，但是切割檔案目前不需要，會改成撥放時再切割分段播放
-                    var fileName = $"{yyyymmdd}{RecFileSn:X4}{subSn:D2}_{chNo}.wav"; // IP錄音大部分是 PCMA、PCMU，故統一用 711
-                    fullFileName = Path.Combine(path, fileName);
-                    _nlog.Info($"[URS] GetRecFullFileName: recID={recID}, subSn={subSn}, RecFileSn={RecFileSn} => {fullFileName}");
-                }                    
-            }            
-            
+                    var machineID = (GVar.Config?.Recording?.MachineID ?? 1) * 10;
+                    var retry = 1;
+                    string lastAttemptFileName = ""; // 提升作用域，讓 Log 抓得到
+
+                    while (retry <= 10) { // 改為 <= 10，給足 10 次機會
+                        RecFileSn++; // 進入迴圈即遞增，確保每次 attempt 都是新序號
+                        var subSn = machineID + retry;
+                        var fileName = $"{yyyymmdd}{RecFileSn:X4}{subSn:D2}_{chNo}.wav";
+                        lastAttemptFileName = fileName;
+
+                        var file_wav = Path.Combine(path, fileName);
+                        var file_711 = Path.ChangeExtension(file_wav, ".711");
+
+                        if (!File.Exists(file_711) && !File.Exists(file_wav)) {
+                            fullFileName = file_wav;
+                            _nlog.Info($"[URS] GetRecFullFileName: recID={recID}, RecFileSn={RecFileSn}, subSn={subSn} => {fullFileName}");
+                            break;
+                        }
+                        else {
+                            // 發生碰撞，下一圈會自動 RecFileSn++ 並增加 subSn
+                            retry++;
+                        }
+                    }
+
+                    if (string.IsNullOrEmpty(fullFileName)) {                        
+                        errMsg = $"無法產生唯一的錄音檔檔名(recID={recID}, path={path}, retry={retry}, lastFileName={lastAttemptFileName})";
+                        _nlog.Error($"[URS] GetRecFullFileName Error: {errMsg}");
+                    }
+                }
+            }
+
             return fullFileName;
         }
 

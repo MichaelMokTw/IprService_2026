@@ -542,7 +542,6 @@ public class IprWorker {
         }
 
         var iprCh = GVar.CTI!.IPRChInfo[_hwChID];
-
         
         iprCh.RecID = recID;
         iprCh.RecFullFileName = recFullFileName;
