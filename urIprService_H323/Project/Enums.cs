@@ -5,6 +5,11 @@
 
 namespace MyProject.ProjectCtrl {
 
+    public enum ENUM_RecProto {        
+        Sip = 1,        
+        H323 = 2
+    }
+
     public enum ENUM_ChannelStatus {
         [Description("閒置")]
         Idle = 2,
