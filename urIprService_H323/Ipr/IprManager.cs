@@ -13,6 +13,13 @@ namespace IprService.Ipr {
             }
         }
 
+        public IprWorker? GetIpr(int hwChID) {
+            if (_workers.TryGetValue(hwChID, out var worker)) {
+                return worker;
+            }
+            return null;
+        }
+
         public void PushData(int hwChID, SsmEventDataModel ssmModel) {
             if (_workers.TryGetValue(hwChID, out var worker)) {
                 worker.EnqueueData(ssmModel);

@@ -1,8 +1,6 @@
 ﻿using MyProject.ProjectCtrl;
-using NLog;
 using shpa3api;
 using Synway.Models;
-using System.Security.AccessControl;
 using urIprService.Models;
 using urSynIpr.lib;
 
@@ -23,7 +21,7 @@ namespace IprService.Ipr {
             var stationID = ssmEvt.stationID;
             var iprCh = GVar.CTI!.IPRChInfo[_hwChID];
 
-            _chLog!.Info($"[{_chType}][{eventName,-32}], nRef={nRef}, staID={stationID}, hWChID={_hwChID}, ursChID={_ursChID}, extNo={_extNo}, RawData=[{ssmEvt.RawData}]");
+            _chLog!.Info($"[{_chType}][{eventName,-32}], nRef={nRef}, staID={stationID}, hwChID={_hwChID}, ursChID={_ursChID}, extNo={_extNo}, RawData=[{ssmEvt.RawData}]");
             switch (ssmEvt.wEventCode) {
                 #region IPR_REC(後面的 port) 收到的 Event
                 // 由 REC Channel 丟出此訊息 
@@ -81,7 +79,7 @@ namespace IprService.Ipr {
                 #region IPR_ANA(前面的 port) 收到的 Event
 
                 case (ushort)EventCode.E_RCV_IPR_DChannel:
-                    ProcessDChannelEvent(ssmEvt); // <= 統一處理有關 D-Channel 的 Event
+                    ProcessDChannelEvent_Sip(ssmEvt); // <= 統一處理有關 D-Channel 的 Event
                     break;
 
                 case (ushort)EventCode.E_RCV_IPR_DONGLE_ADDED:
@@ -169,7 +167,7 @@ namespace IprService.Ipr {
                     // 停止錄音: 如果是 callState 是 idle，且錄音在(Active/Pause) => 則停止錄音
                     if (iprCh.CallState == (int)ENUM_CallState.Idle && iprCh.RecordingState != (int)ENUM_RecordingState.Idle) {
                         _chLog!.Info($"\t -> STOP RECORDING: staID={stationID}, ext={_extNo}");
-                        StopRecording(ssmEvt);
+                        StopRecording(ssmEvt.CallInfo.CallRef);
                     }
                     else {
                         #region 判斷是否要 remove callRefObj, held 時要保留 
@@ -246,7 +244,121 @@ namespace IprService.Ipr {
             PrintIprDebug();
         }
 
+        private void ProcessDChannelEvent_Sip(SsmEventDataModel ssmEvt) {
+            var stationID = ssmEvt.stationID;
+            var dEventName = ssmEvt.GetDEventCodeName();
+            var callInfo = ssmEvt.CallInfo;
+            _chLog!.Info($">>> DChEvent=[{dEventName}], nRef={ssmEvt.nReference}, staID={stationID}, dwSubRsn={ssmEvt.dwSubReason}, " +
+                                $"CallInfo(callRef={callInfo.CallRef}, callSrc={callInfo.CallSource}, caller={callInfo.szCallerId}, called={callInfo.szCalledId}, pvBuf={ssmEvt.pvBuffer}");
 
+            CallRefDataModel? callRefObj = null;
+            var iprCh = GVar.CTI!.IPRChInfo[_hwChID];
+
+            switch (ssmEvt.dwParam) {
+                case (ushort)DEventCode.DE_REMOTE_PARTYID: // RemotePartyID
+                    #region DE_REMOTE_PARTYID 的處理說明
+                    //進線:
+                    //  1. EXT=87612981, callSrc=1, caller 不準(沒有@)，called = 自己，RemotePartyID = 對方
+                    //  2. EXT=87612981, callSrc=1, caller = 對方，called = 自己，RemotePartyID = 自己
+                    //外撥:
+                    //  caller = 自己, called = 不準(sip:0@...), RemotePartyID = 對方
+                    //結論: RemotePartyID 有點不一定，要判斷，看一下 StopRecording() 的寫法
+                    #endregion
+
+                    iprCh.RemotePartyID = ssmEvt.pvBuffer; //lib_ctiDecode.GetSsmEventpvBuffer(ssmEvent); 
+                    _chLog!.Info($"\t -> ext={_extNo}, set IPRChInfo[{_hwChID}].RemotePartyID={iprCh.RemotePartyID}");
+
+                    // 2021/07/26 added:
+                    // DE_REMOTE_PARTYID 發生時, DE_CALL_CONNECTED 還沒發生，而且此時的 CallRef 不能用
+                    // 所以，只能記錄在 ChCtrl.LastRemotePartyID, 之後在 DE_CALL_CONNECTED 發生時再取得
+                    //--------------------------------------------------------------------------------------
+                    ChCtrl.LastRemotePartyID = ssmEvt.pvBuffer;
+                    ChCtrl.RemotePartyIDSetTime = DateTime.Now;
+                    //--------------------------------------------------------------------------------------
+                    break;
+
+                case (ushort)DEventCode.DE_DGT_PRS:
+                    //發現 Cisco 抓這個會不完整...所以這裡只顯示log，不放進 DTMF                    
+                    string c = (ssmEvt.dwSubReason & 0x000000ff).ToString();
+                    _chLog!.Info($"\t -> get dtmf={c}");
+                    break;
+
+                // SIP 沒有 DE_MSG_CHG ，不需要從 LCD 抓資訊                
+                case (ushort)DEventCode.DE_MSG_CHG:
+                    break;
+
+                case (ushort)DEventCode.DE_AUDIO_CHG:
+                    // 判斷 dwSubReason 無法解決"沒有 DE_RELEASE_BTN_PRS 的問題"
+                    // 因為當 Agent Login/Logout 並沒有此 Event 出現...
+                    break;
+
+                //  當 DE_CALL_CONNECTED 出現時，直接在此處取 CallDir/DTMF/CallerID
+                case (ushort)DEventCode.DE_CALL_CONNECTED:
+                case (ushort)DEventCode.DE_OFFHOOK: // 這個Event Cisco 沒有，但暫時保留
+                    iprCh.CallState = (int)ENUM_CallState.Active;
+
+                    callRefObj = CreateCallRefObj(callInfo);
+                    _chLog!.Info($"\t -> create a new callRefObj({callRefObj.CallRef}), callDir={callRefObj.CallDir}");
+                    break;
+
+                // 響鈴
+                case (ushort)DEventCode.DE_CALL_ALERTING: // for SIP
+                case (ushort)DEventCode.DE_RING_ON:       // for AVAYA H.3232/Alcatel
+                    iprCh.RingFlag = 1; // 這是曾經響鈴，故如果 RingOff或onhook, 不需要變 0, 直到錄音結束
+                    iprCh.CallState = (int)ENUM_CallState.Ring;
+                    break;
+
+                // 掛話筒(以下5種都是一樣的處理)
+                case (ushort)DEventCode.DE_CALL_REJECTED:
+                case (ushort)DEventCode.DE_CALL_ABANDONED:
+                case (ushort)DEventCode.DE_CALL_RELEASED:
+                case (ushort)DEventCode.DE_RELEASE_BTN_PRS:
+                case (ushort)DEventCode.DE_ONHOOK:
+                    //GlobalVar.CTI!.IPRChInfo[_hwChID].CallState = (int)ENUM_CallState.Idle;                    
+                    StopRecording(ssmEvt.CallInfo.CallRef);
+                    #region 原來是不管如何都設為 Idle，但要改為如下說明:
+                    // ------------------------------------------------------------------------------------------------------------
+                    // 因為 2021/09/25 發現，Cisco 的外線在 ConsultationCall, ConfCall, Held 時，都會先出現 Release，
+                    // 雖然這個 Release 不會造成停止錄音，但是會把 CallState 設為 Idle，當真正 Held 觸發
+                    // 而出現 E_RCV_IPR_MEDIA_SESSION_STOPED 時, 就會造成停止錄音，這樣就會錄成 2 通...，所以
+                    // 解法: 真的沒有任何的 call 時，才設為 Idle,
+                    #endregion
+                    if (callRefMgr.IsCallRefEmpty) {
+                        iprCh.CallState = (int)ENUM_CallState.Idle;
+                    }
+                    break;
+
+                // 要把 CallRefObj.Status 設為 Held
+                case (ushort)DEventCode.DE_CALL_HELD:
+                    callRefObj = callRefMgr.GetCallRef(callInfo.CallRef);
+                    if (callRefObj != null) {
+                        callRefObj.Status = ENUM_CallRefStatus.CallHeld;
+                        callRefObj.LastHeldTime = DateTime.Now;
+                    }
+                    break;
+
+                // 要把 CallRefObj.Status 設為 Connected
+                case (ushort)DEventCode.DE_CALL_RETRIEVED:
+                    callRefObj = callRefMgr.GetCallRef(callInfo.CallRef);
+                    if (callRefObj != null) {
+                        callRefObj.Status = ENUM_CallRefStatus.CallConnected;
+                        callRefObj.LastHeldTime = null;
+                    }
+                    break;
+                case (ushort)DEventCode.DE_RING_OFF:
+                    // 這一段有點奇怪，還要斟酌...
+                    if (iprCh.CallState == (int)ENUM_CallState.Ring) {
+                        _chLog!.Info($"\t -> staID={stationID}, ext={_extNo} last callState is CALL_STATE_RING, set callState=CALL_STATE_IDLE");
+                        iprCh.CallState = (int)ENUM_CallState.Idle;
+                        StopRecording(ssmEvt.CallInfo.CallRef);
+                    }
+                    break;
+                case (ushort)DEventCode.DE_SIP_RAW_MSG:
+                    break;
+                default:
+                    break;
+            }
+        }
 
     }
 }
